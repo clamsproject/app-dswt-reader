@@ -44,10 +44,12 @@ def appmetadata() -> AppMetadata:
     metadata.add_output(AnnotationTypes.Thing, typeSpecificProperty='property-value')
 
     metadata.add_input(DocumentTypes.VideoDocument)
-    in_tf = metadata.add_input(AnnotationTypes.TimeFrame, representatives='?')
+    in_tf = metadata.add_input(AnnotationTypes.TimeFrame, label="credits")
     in_tf.add_description('')
 
     out_td = metadata.add_output(DocumentTypes.TextDocument, **{'@lang': 'en'})
+    out_td.add_description('')
+    out_td = metadata.add_output(AnnotationTypes.Alignment)
     out_td.add_description('')
 
     ## Alignment?
@@ -55,6 +57,20 @@ def appmetadata() -> AppMetadata:
     # (optional) and finally add runtime parameter specifications
     metadata.add_parameter(name='a_param', description='example parameter description',
                            type='boolean', default='false')
+    metadata.add_parameter(name='x_threshold', description='A relative threshold value (0-1) for the x-coordinate to determine how close the text blocks need to be horizontally to be grouped together.',
+                           type='float', default=0.0117)
+    metadata.add_parameter(name='y_limit',
+                           description='A relative value (0-1) for the y-coordinate: if it is vertically farther apart than this value, it is considered a separate group even if the x-coordinate difference is within the x_threshold.',
+                           type='float', default=0.1838)
+    metadata.add_parameter(name='y_threshold',
+                           description='A relative threshold value (0-1) for the y-coordinate to determine how close the text blocks need to be vertically to be grouped together.',
+                           type='float', default=0.00919)
+    metadata.add_parameter(name='first_n_timepoints', description='The initial number of timepoints to sample from the beginnign of the timeframe',
+                           type='int', default=20)
+    metadata.add_parameter(name='initial_interval',
+                           description='The initial interval to sample timepoints from the beginning of the timeframe (in milliseconds)',
+                           type='int', default=1000)
+
     # metadta.add_parameter(more...)
     
     # CHANGE this line and make sure return the compiled `metadata` instance

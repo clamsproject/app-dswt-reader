@@ -133,6 +133,7 @@ class DswtReader(ClamsApp):
 
         # 3. Find the best interval that minimizes overlaps while ensuring nothing is missed by incrementing the
         # timepoint interval one by one and comparing the sentences of two consecutive timepoints.
+        # This part used to be a function find_best_interval(sorted_tp, map_tp2sentences):
         best_interval = len(first_n_timestamp) - 1
         for j in range(1, len(first_n_timestamp)):
             num_overlap = 0
@@ -158,7 +159,7 @@ class DswtReader(ClamsApp):
 
         return list_TP
 
-    def scene_w_multicolumn(self):
+    def scene_w_multicolumn(self, y_threshold=0.00919):
         """
         Find all scenes with text with multiple columns using coordinates of bounding box of each paragraph and group the consecutive scenes together.
         :return: A list of lists where each sublist contains consecutive scenes with multi columns of text grouped together.
@@ -171,7 +172,7 @@ class DswtReader(ClamsApp):
             # When grouping paragraphs with similar y-coordinates of their bounding box start points, if there is a
             # group with more than one element, it is considered that there are two or more parallel columns or text
             # blocks within that scene.
-            grouped_by_y = self.group_keys_by_starting_y(data)
+            grouped_by_y = self.group_keys_by_starting_y(data, y_threshold)
             loop_break = False
             for list_pa in grouped_by_y:
                 if len(list_pa) > 1 and not prev:
@@ -191,7 +192,7 @@ class DswtReader(ClamsApp):
 
         return scene_w_multicolumn
 
-    def read_text_from_scenes(self, list_TP: list, video_doc: Document, timeunit, fps):
+    def read_text_from_scenes(self, list_tp: list, video_doc: Document, timeunit, fps):
         """
         Run docTR reader on the scenes of video_doc from timepoints in the list_TP and fill the following attributes
         based on the text read.:
@@ -200,7 +201,7 @@ class DswtReader(ClamsApp):
         self.pa2txt = {}
         """
         idx = 1
-        for TP in list_TP:
+        for TP in list_tp:
             tp_frame_index = vdh.convert(TP, timeunit, "frame", fps)
             image: np.ndarray = vdh.extract_frames_as_images(video_doc, [tp_frame_index], as_PIL=False)[0]
             result = self.reader([image])
@@ -216,15 +217,18 @@ class DswtReader(ClamsApp):
             self.TP2bb[TP] = pa2bb
             self.tp2sentences_final[TP] = sentences
 
-    def read_multiple_blocks_in_order(self, data_TP_list: list, x_threshold: float, y_threshold: float):
+    def read_multiple_blocks_in_order(self, tp_w_multicolumns_list: list, x_threshold: float, y_limit: float):
 
-        def group_keys_by_starting_x(data: dict, x_threshold: float, y_threshold: float):
+        def group_keys_by_starting_x(data: dict, x_threshold: float, y_limit: float):
             """
             A function that groups paragraphs with similar x-coordinates of the starting point (x1) of bounding boxes,
             given as [[x1, y1], [x2, y2]], where [x1, y1] is the top-left corner and [x2, y2] is the bottom-right corner.
             :param data: a dictionary of [[x1, y1], [x2, y2]], e.g.: {'pa_204': [[0.462, 0.78], [0.835, 0.100]]}
-            :param x_threshold: relative value 0-1
-            :param y_threshold: relative value 0-1
+            :param x_threshold: A relative threshold value (0-1) for the x-coordinate to determine how close the text
+                                blocks need to be horizontally to be grouped together.
+            :param y_limit: A relative value (0-1) for the y-coordinate
+                          : if it is vertically farther apart than this value, it is considered a separate group
+                             even if the x-coordinate difference is within the x_threshold.
             :return: A list of keys (paragraph ids) grouped by similar x-coordinates of their bounding box start points.
             """
             grouped_keys = []
@@ -245,9 +249,9 @@ class DswtReader(ClamsApp):
                     value2_y = data[key2][0][1]
 
                     # We will check if the y-coordinate difference between the last element in the group and the current
-                    # element is within a specified threshold. To add the constraint that the last element in a group
+                    # element is within a specified limit. To add the constraint that the last element in a group
                     # should not differ too much in the y-coordinate from the current element.
-                    if abs(value1_x - value2_x) <= x_threshold and abs(data[group[-1]][1][1] - value2_y) <= y_threshold:
+                    if abs(value1_x - value2_x) <= x_threshold and abs(data[group[-1]][1][1] - value2_y) <= y_limit:
                         group.append(key2)
                         visited.add(key2)
 
@@ -299,20 +303,20 @@ class DswtReader(ClamsApp):
             return merged_groups
 
         # A group-merge loop for handling cases where three or more consecutive scenes with multi-column text need to be merged.
-        data1 = self.TP2bb[data_TP_list[0]]
-        grouped1 = group_keys_by_starting_x(data1, x_threshold, y_threshold)
-        if len(data_TP_list) > 1:
-            for i in range(len(data_TP_list) - 1):
-                tp2 = data_TP_list[i + 1]
+        data1 = self.TP2bb[tp_w_multicolumns_list[0]]
+        grouped1 = group_keys_by_starting_x(data1, x_threshold, y_limit)
+        if len(tp_w_multicolumns_list) > 1:
+            for i in range(len(tp_w_multicolumns_list) - 1):
+                tp2 = tp_w_multicolumns_list[i + 1]
                 data2 = self.TP2bb[tp2]
-                grouped2 = group_keys_by_starting_x(data2, x_threshold, y_threshold)
+                grouped2 = group_keys_by_starting_x(data2, x_threshold, y_limit)
                 result = merge_groupings(grouped1, grouped2, data1, data2, x_threshold)
                 data1.update(data2)
                 grouped1 = result
 
         return grouped1, data1
 
-    def group_keys_by_starting_y(self, data: dict[list[float, float]], threshold=0.00919):
+    def group_keys_by_starting_y(self, data: dict, y_threshold):
         """
         A function that groups paragraphs with similar x-coordinates of the starting point (y1) of bounding boxes,
         given as [[x1, y1], [x2, y2]], where [x1, y1] is the top-left corner and [x2, y2] is the bottom-right corner.
@@ -334,7 +338,7 @@ class DswtReader(ClamsApp):
                     continue
                 value2 = data[key2][0][1]
 
-                if abs(value1 - value2) <= threshold:
+                if abs(value1 - value2) <= y_threshold:
                     group.append(key2)
                     visited.add(key2)
 
@@ -370,7 +374,7 @@ class DswtReader(ClamsApp):
         y1, y2 = min(ys), max(ys)
         return (x1, y1), (x2, y2)
 
-    def process_concatenation(self, multicolumn_list_TP, x_threshold=0.0117, y_threshold=0.1838):
+    def process_concatenation(self, multicolumn_list_TP, x_threshold=0.0117, y_limit=0.1838):
         """
         This function reads text from consecutive scenes with multiple columns of text in column order.
         It uses the earliest timepoint as the representative and updates the timepoint-to-sentences dictionary as
@@ -379,7 +383,9 @@ class DswtReader(ClamsApp):
         duplicates.
         :param multicolumn_list_TP: A list of lists where each sublist contains consecutive scenes with multi columns of text grouped together.
         :param x_threshold: A threshold value for the x-coordinate to determine how close the text blocks need to be horizontally to be grouped together.
-        :param y_threshold: A threshold value for the y-coordinate to determine how close the text blocks need to be vertically to be grouped together.
+        :param y_limit: A relative value (0-1) for the y-coordinate
+                      : if it is vertically farther apart than this value, it is considered a separate group  even if
+                        the x-coordinate difference is within the x_threshold.
         :return: a single string of the concatenated sentences.
         """
         # read text from consecutive scenes (in a TP_list) with multiple columns of text in column order.
@@ -389,7 +395,7 @@ class DswtReader(ClamsApp):
                 # Only the representative timepoint is kept in the final version of timepoint-to-sentences dict.
                 if tp != representative_tp:
                     del self.tp2sentences_final[tp]
-            grouped_pa_ids, pa2bb = self.read_multiple_blocks_in_order(TP_list, x_threshold, y_threshold)
+            grouped_pa_ids, pa2bb = self.read_multiple_blocks_in_order(TP_list, x_threshold, y_limit)
             sentences = self.read_paragraphs_from_grouped_ids(grouped_pa_ids, self.pa2txt)
             self.tp2sentences_final[representative_tp] = sentences
 
@@ -425,6 +431,11 @@ class DswtReader(ClamsApp):
             self.TP2bb = defaultdict(dict)
             self.pa2txt = {}
             # get first and last timepoints in the timeframe that is classified as a dynamic credit.
+
+            # TODO
+            # start_time = timeframe.get("start")
+            # end_time = timeframe.get("end")
+
             target_start_id = timeframe.get("targets")[0]
             target_end_id = timeframe.get("targets")[-1]
             if Mmif.id_delimiter not in target_start_id:
@@ -438,20 +449,19 @@ class DswtReader(ClamsApp):
             fps = video_doc.get("fps")
 
             # Resample timepoints at the optimal interval
-            list_TP = self.resampleTP_at_best_interval(video_doc, start_TP_annotation, end_TP_annotation, 20, 1000)
+            list_TP = self.resampleTP_at_best_interval(video_doc, start_TP_annotation, end_TP_annotation, parameters['first_n_timepoints'], parameters['initial_interval'])
             # Read texts from the scenes in the timepoints resampled
             self.read_text_from_scenes(list_TP, video_doc, timeUnit, fps)
             # Find the scenes (timepoints) with multiple columns
-            multicolumn_list_TP = self.scene_w_multicolumn
+            multicolumn_list_TP = self.scene_w_multicolumn(parameters['y_threshold'])
 
             # concatenate sentences considering reading orders in the texts with multiple columns
-            result_text = self.process_concatenation(multicolumn_list_TP)
+            result_text = self.process_concatenation(multicolumn_list_TP, parameters['x_threshold'], parameters['y_limit'])
             print(result_text)
 
             # Save the resulted text as a textdocument in the new view and align it to the corresponding timeframe.
             text_document: Document = new_view.new_textdocument(result_text)
-            td_id = text_document.id
-            new_view.new_annotation(AnnotationTypes.Alignment, source = timeframe.id, target = td_id)
+            new_view.new_annotation(AnnotationTypes.Alignment, source = timeframe.long_id, target = text_document.long_id)
 
         return mmif
 
