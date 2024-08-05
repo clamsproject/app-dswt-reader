@@ -86,9 +86,10 @@ class DswtReader(ClamsApp):
         :return: [sentence3, sentence4]
         """
         for i in range(len(list1)):
-            if editdistance.eval(list1[i], list2[0]) / len(list1[i]) < 0.5:
-                overlap_len = len(list1) - i
-                return list1[i:], list2[:overlap_len]
+            if len(list2) > 0:
+                if editdistance.eval(list1[i], list2[0]) / len(list1[i]) < 0.5:
+                    overlap_len = len(list1) - i
+                    return list1[i:], list2[:overlap_len]
         return [], []
 
     def resampleTP_at_best_interval(self, video_doc: Document, start_TP_annotation: Annotation, end_TP_annotation: Annotation, n=20, step=1000):
@@ -265,6 +266,26 @@ class DswtReader(ClamsApp):
         def get_last_y_coordinate(data: dict, key):
             return data[key][-1][1]
 
+        def update_dictionary_values(input_dict, x):
+            """
+            Update the dictionary by adding 1 to the second element of the second tuple in each value.
+
+            :param input_dict: The input dictionary
+            :return: A new dictionary with updated values
+            """
+            updated_dict = {}
+
+            for key, value in input_dict.items():
+                # Unpack the value
+                (first_tuple, second_tuple) = value
+                # Unpack the second tuple and add 1 to the second element
+                updated_first_tuple = (first_tuple[0], first_tuple[1] + x)
+                updated_second_tuple = (second_tuple[0], second_tuple[1] + x)
+                # Reassemble the updated value
+                updated_dict[key] = (updated_first_tuple, updated_second_tuple)
+
+            return updated_dict
+
         def merge_groupings(grouped1: list[list], grouped2: list[list], data1: dict, data2: dict, x_threshold: float):
             """
             When two or more consecutive scenes contain text with multiple columns, there is a possibility that the
@@ -279,27 +300,26 @@ class DswtReader(ClamsApp):
 
             :return: a merged list of grouped paragraphs (grouped1 and grouped2) and their corresponding coordinate dictionary
             """
-            merged_groups = []
-            for group1 in grouped1:
-                first_x1 = get_first_x_coordinate(data1, group1[0])
-                max_y1 = get_last_y_coordinate(data1, group1[-1])
-                merged_group = group1.copy()
-                for group2 in grouped2:
-                    first_x2 = get_first_x_coordinate(data2, group2[0])
+            merged_groups = grouped1.copy()
+            initial_len = len(grouped1)
+            merged_data = {**data1, **data2}
+            for group2 in grouped2:
+                first_x2 = get_first_x_coordinate(data2, group2[0])
+                best_group = None
+                best_y = -float('inf')
+                for idx in range(initial_len):
+                    group1 = merged_groups[idx]
+                    first_x1 = get_first_x_coordinate(data1, group1[0])
                     if abs(first_x1 - first_x2) <= x_threshold:
-                        # Find the group in grouped1 with the largest y-coordinate
-                        best_group = None
-                        best_y = -float('inf')
-                        for g in grouped1:
-                            if abs(get_first_x_coordinate(data1, g[0]) - first_x2) <= x_threshold:
-                                last_y = get_last_y_coordinate(data1, g[-1])
-                                if last_y > best_y:
-                                    best_y = last_y
-                                    best_group = g
-                        # If the current group1 is the best group, merge group2 into it
-                        if best_group == group1:
-                            merged_group.extend(group2)
-                merged_groups.append(merged_group)
+                        last_y = get_last_y_coordinate(merged_data, grouped1[idx][-1])
+                        if last_y > best_y:
+                            best_y = last_y
+                            best_group = group1
+                if best_group is not None:
+                    best_group.extend(group2)
+                else:
+                    merged_groups.append(group2)
+
             return merged_groups
 
         # A group-merge loop for handling cases where three or more consecutive scenes with multi-column text need to be merged.
@@ -308,7 +328,7 @@ class DswtReader(ClamsApp):
         if len(tp_w_multicolumns_list) > 1:
             for i in range(len(tp_w_multicolumns_list) - 1):
                 tp2 = tp_w_multicolumns_list[i + 1]
-                data2 = self.TP2bb[tp2]
+                data2 = update_dictionary_values(self.TP2bb[tp2], i+1)
                 grouped2 = group_keys_by_starting_x(data2, x_threshold, y_limit)
                 result = merge_groupings(grouped1, grouped2, data1, data2, x_threshold)
                 data1.update(data2)
@@ -356,9 +376,14 @@ class DswtReader(ClamsApp):
         """
         sentences = []
         for id_list in grouped_ids:
-            for id in id_list:
-                sentences += pa_id2txt[id].split("\n")
-            sentences[-1] = sentences[-1] + "\n"
+            if len(id_list) > 0:
+                sentences += pa_id2txt[id_list[0]].split("\n")
+                for i in range(len(id_list) - 1):
+                    prev_sentences = pa_id2txt[id_list[i]].split("\n")
+                    curr_sentences = pa_id2txt[id_list[i + 1]].split("\n")
+                    overlap1, overlap2 = self.find_overlap(prev_sentences, curr_sentences)
+                    sentences += curr_sentences[len(overlap1):]
+                sentences[-1] = sentences[-1] + "\n"
         return sentences
 
     def rel_coordinate_pair(self, coords: Sequence[Tuple[float, float]]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
@@ -390,14 +415,15 @@ class DswtReader(ClamsApp):
         """
         # read text from consecutive scenes (in a TP_list) with multiple columns of text in column order.
         for TP_list in multicolumn_list_TP:
-            representative_tp = TP_list[0]
-            for tp in TP_list:
-                # Only the representative timepoint is kept in the final version of timepoint-to-sentences dict.
-                if tp != representative_tp:
-                    del self.tp2sentences_final[tp]
-            grouped_pa_ids, pa2bb = self.read_multiple_blocks_in_order(TP_list, x_threshold, y_limit)
-            sentences = self.read_paragraphs_from_grouped_ids(grouped_pa_ids, self.pa2txt)
-            self.tp2sentences_final[representative_tp] = sentences
+            if len(TP_list) > 0:
+                representative_tp = TP_list[0]
+                for tp in TP_list:
+                    # Only the representative timepoint is kept in the final version of timepoint-to-sentences dict.
+                    if tp != representative_tp:
+                        del self.tp2sentences_final[tp]
+                grouped_pa_ids, pa2bb = self.read_multiple_blocks_in_order(TP_list, x_threshold, y_limit)
+                sentences = self.read_paragraphs_from_grouped_ids(grouped_pa_ids, self.pa2txt)
+                self.tp2sentences_final[representative_tp] = sentences
 
         # concatenate the sentences in timepoint order
         sorted_tp = sorted(list(self.tp2sentences_final.keys()))

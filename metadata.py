@@ -58,7 +58,7 @@ def appmetadata() -> AppMetadata:
     metadata.add_parameter(name='a_param', description='example parameter description',
                            type='boolean', default='false')
     metadata.add_parameter(name='x_threshold', description='A relative threshold value (0-1) for the x-coordinate to determine how close the text blocks need to be horizontally to be grouped together.',
-                           type='float', default=0.0117)
+                           type='float', default=0.012)
     metadata.add_parameter(name='y_limit',
                            description='A relative value (0-1) for the y-coordinate: if it is vertically farther apart than this value, it is considered a separate group even if the x-coordinate difference is within the x_threshold.',
                            type='float', default=0.1838)
