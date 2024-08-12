@@ -92,7 +92,8 @@ class DswtReader(ClamsApp):
                     return list1[i:], list2[:overlap_len]
         return [], []
 
-    def resampleTP_at_best_interval(self, video_doc: Document, start_TP_annotation: Annotation, end_TP_annotation: Annotation, n=20, step=1000):
+    def resampleTP_at_best_interval(self, video_doc: Document, start_TP_annotation: Annotation,
+                                    end_TP_annotation: Annotation, n=20, step=1000):
         """
         Resample the timepoints between start and end in targets at the best interval.
         :param video_doc: video document
@@ -263,6 +264,9 @@ class DswtReader(ClamsApp):
         def get_first_x_coordinate(data: dict, key):
             return data[key][0][0]
 
+        def get_first_y_coordinate(data: dict, key):
+            return data[key][0][1]
+
         def get_last_y_coordinate(data: dict, key):
             return data[key][-1][1]
 
@@ -286,7 +290,7 @@ class DswtReader(ClamsApp):
 
             return updated_dict
 
-        def merge_groupings(grouped1: list[list], grouped2: list[list], data1: dict, data2: dict, x_threshold: float):
+        def merge_groupings(grouped1: list[list], grouped2: list[list], data1: dict, data2: dict, x_threshold: float, y_limit: float):
             """
             When two or more consecutive scenes contain text with multiple columns, there is a possibility that the
             text continues within the same column. Group paragraphs within a scene classified as multi-column into
@@ -305,13 +309,14 @@ class DswtReader(ClamsApp):
             merged_data = {**data1, **data2}
             for group2 in grouped2:
                 first_x2 = get_first_x_coordinate(data2, group2[0])
+                first_y2 = get_first_y_coordinate(data2, group2[0])
                 best_group = None
                 best_y = -float('inf')
                 for idx in range(initial_len):
                     group1 = merged_groups[idx]
                     first_x1 = get_first_x_coordinate(data1, group1[0])
-                    if abs(first_x1 - first_x2) <= x_threshold:
-                        last_y = get_last_y_coordinate(merged_data, grouped1[idx][-1])
+                    last_y = get_last_y_coordinate(merged_data, grouped1[idx][-1])
+                    if abs(first_x1 - first_x2) <= x_threshold and abs(first_y2 - last_y) <= y_limit:
                         if last_y > best_y:
                             best_y = last_y
                             best_group = group1
@@ -330,7 +335,7 @@ class DswtReader(ClamsApp):
                 tp2 = tp_w_multicolumns_list[i + 1]
                 data2 = update_dictionary_values(self.TP2bb[tp2], i+1)
                 grouped2 = group_keys_by_starting_x(data2, x_threshold, y_limit)
-                result = merge_groupings(grouped1, grouped2, data1, data2, x_threshold)
+                result = merge_groupings(grouped1, grouped2, data1, data2, x_threshold, y_limit)
                 data1.update(data2)
                 grouped1 = result
 
@@ -366,7 +371,7 @@ class DswtReader(ClamsApp):
 
         return grouped_keys
 
-    def read_paragraphs_from_grouped_ids(self, grouped_ids:list[list], pa_id2txt: dict):
+    def read_paragraphs_from_grouped_ids(self, grouped_ids: list[list], pa_id2txt: dict):
         """
         Split the text of all paragraphs within the lists of the grouped_id list into sentences,
         then put them in order into a single list and return that list.
@@ -475,7 +480,8 @@ class DswtReader(ClamsApp):
             fps = video_doc.get("fps")
 
             # Resample timepoints at the optimal interval
-            list_TP = self.resampleTP_at_best_interval(video_doc, start_TP_annotation, end_TP_annotation, parameters['first_n_timepoints'], parameters['initial_interval'])
+            list_TP = self.resampleTP_at_best_interval(video_doc, start_TP_annotation, end_TP_annotation,
+                                                       parameters['first_n_timepoints'], parameters['initial_interval'])
             # Read texts from the scenes in the timepoints resampled
             self.read_text_from_scenes(list_TP, video_doc, timeUnit, fps)
             # Find the scenes (timepoints) with multiple columns
