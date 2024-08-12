@@ -2,6 +2,8 @@ import jiwer
 from jiwer import wer, cer
 import mmif
 import argparse
+import nltk
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 
 def read_mmif(mmif_file) -> mmif.Mmif:
@@ -50,6 +52,32 @@ def preprocessing(input_string):
     return joined_sentences
 
 
+def calculate_bleu(gold_text, predicted_text):
+    """
+    Calculate the BLEU score for a predicted text compared to the gold text.
+
+    :param predicted_text: The predicted text (hypothesis)
+    :param gold_text: The gold text (reference)
+    :return: The BLEU score
+    """
+    predicted_text = preprocessing(predicted_text)
+    predicted_text = predicted_text.replace("\n", " ")
+    gold_text = preprocessing(gold_text)
+    gold_text = gold_text.replace("\n", " ")
+
+    # Tokenize the texts into lists of words
+    gold = [gold_text.split()]  # BLEU expects a list of references
+    predicted = predicted_text.split()
+
+    # Use smoothing function to handle cases with small datasets
+    smoothing = SmoothingFunction().method1
+
+    # Calculate BLEU score
+    bleu_score = sentence_bleu(gold, predicted, smoothing_function=smoothing)
+
+    return bleu_score
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--gold", help="File path to gold annotated txt file", type=str, required=True)
@@ -74,5 +102,9 @@ if __name__ == "__main__":
     wer_score = wer(gold_sentences, predicted_sentences)
     cer_score = cer(gold_sentences, predicted_sentences)
 
-    print(f"WER: {wer_score:.2f}")
-    print(f"CER: {cer_score:.2f}")
+    # Calculate BLEU score
+    BLEU_score = calculate_bleu(gold_sentences, predicted_sentences)
+
+    print(f"WER: {wer_score:.4f}")
+    print(f"CER: {cer_score:.4f}")
+    print(f"BLEU score: {BLEU_score:.4f}")
