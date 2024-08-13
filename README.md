@@ -29,12 +29,23 @@ The TextDocument is aligned to the TimeFrame.
 - The `examples/gold_transcriptions/` folder contains gold annotations, formatted as follows:
 
   - Each Job Title and corresponding Names are listed as follows, based on the placement of the text within the scenes. Each Job title-Names pair is separated by two newlines (`\n\n`):
-    - `<Job title> <names>`
+    - `<Job title> <name>`
     or
     - `<Job title>\n<names>`
+    or
+    - `<Job title> <name>\n<names>`
 
   - Logo Part: Logos are annotated using `<Logo>` or `<Logos>`.
   - Other texts are transcribed based on their placement within the scene.
+  
+- Start and end timePoint (in ms) of annotated TimeFrames in each example video
+  - sample_video_1.mp4
+  `<start>: 0, <end>: 282000`
+  - sample_video_2.mp4
+  `<start>: 10000, <end>: 250000`
+  - sample_video_3.mp4
+  `<start>: 52000, <end>: 295000`
+  
 
 
 ### System requirements
