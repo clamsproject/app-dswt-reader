@@ -2,7 +2,6 @@ import jiwer
 from jiwer import wer, cer
 import mmif
 import argparse
-import nltk
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 
