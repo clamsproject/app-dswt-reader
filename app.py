@@ -13,29 +13,18 @@ The app.py script does several things:
 
 import argparse
 import logging
-import json
-from concurrent.futures import ThreadPoolExecutor
-from math import floor, ceil
-from typing import Tuple, Sequence, Any, List
+from typing import Tuple, Sequence
 
 import numpy as np
 import torch
-from clams import ClamsApp, Restifier
 from doctr.models import ocr_predictor
-from lapps.discriminators import Uri
 from mmif.utils import video_document_helper as vdh
-
-# Imports needed for Clams and MMIF.
-# Non-NLP Clams applications will require AnnotationTypes
 
 from clams import ClamsApp, Restifier
 from mmif import Mmif, View, Annotation, Document, AnnotationTypes, DocumentTypes
 import mmif
 from collections import defaultdict
 import editdistance
-
-# For an NLP tool we need to import the LAPPS vocabulary items
-from lapps.discriminators import Uri
 
 
 class DswtReader(ClamsApp):
