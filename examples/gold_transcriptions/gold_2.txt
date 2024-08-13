@@ -489,7 +489,7 @@ TM: Copyright c Lucasfilm Ltd. (LFL) MCMLXXXI
 
 All Rights Reserved
 
-LOGO
+<Logos>
 
 Music Performed by The London Symphony Orchestra
 Our Appreciation for the U.S. Fish and Wildlife Service's Cooperation

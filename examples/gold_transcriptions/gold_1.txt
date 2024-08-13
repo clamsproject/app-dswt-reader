@@ -1012,10 +1012,10 @@ Fred Leighton
 Neil Barrett
 
 FILMED IN
-Logo
+<Logo>
 
 PRINTS BY DELUXE R
-Logos
+<Logos>
 
 Spider-Man character R & C 2004 Marvel Characters, Inc. All Rights Reserved.
 
@@ -1025,7 +1025,7 @@ the name, character or history of any person is entirely coincidental and uninte
 American Humane Association monitored the animal action.
 No animal was harmed in the making of this film. (AHA 00577)
 
-Logo
+<Logo>
 
 This motion picture photoplay is protected pursuant to the provisions of the laws of the United States of America and other
 countries. Any unauthorized duplication and/or distribution of this photoplay may result in
@@ -1035,4 +1035,4 @@ COLUMBIA
 PICTURES
 A COLUMBIA PICTURES RELEASE
 a SONY PICTURES ENTERTAINMENT company
-Logo
+<Logo>
