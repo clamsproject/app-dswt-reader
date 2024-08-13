@@ -24,7 +24,7 @@ The TextDocument is aligned to the TimeFrame.
 
 - General user instructions for CLAMS apps are available at [CLAMS Apps documentation](https://apps.clams.ai/clamsapp).
 
-- [The documentation for docTR]('https://mindee.github.io/doctr/latest//using_doctr/using_models.html'), the OCR model used in this app.
+- [The documentation for docTR]('https://mindee.github.io/doctr/modules/io.html#document-structure'), the OCR model used in this app.
 
 - The `examples/gold_transcriptions/` folder contains gold annotations, formatted as follows:
 
