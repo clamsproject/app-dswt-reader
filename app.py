@@ -66,7 +66,7 @@ class DswtReader(ClamsApp):
             mmif_obj = mmif.Mmif(file.read())
             return mmif_obj
 
-    def find_overlap(self, list1: list[str], list2: list[str]):
+    def find_overlap(self, list1, list2):
         """
         Find overlab between two lists of sentences
         For example,
@@ -360,7 +360,7 @@ class DswtReader(ClamsApp):
 
         return grouped_keys
 
-    def read_paragraphs_from_grouped_ids(self, grouped_ids: list[list], pa_id2txt: dict):
+    def read_paragraphs_from_grouped_ids(self, grouped_ids: list, pa_id2txt: dict):
         """
         Split the text of all paragraphs within the lists of the grouped_id list into sentences,
         then put them in order into a single list and return that list.

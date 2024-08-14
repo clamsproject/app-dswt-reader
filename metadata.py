@@ -40,8 +40,6 @@ def appmetadata() -> AppMetadata:
         analyzer_license="Apache 2.0",  # short name for a software license
     )
     # and then add I/O specifications: an app must have at least one input and one output
-    metadata.add_input(DocumentTypes.Document)
-    metadata.add_output(AnnotationTypes.Thing, typeSpecificProperty='property-value')
 
     metadata.add_input(DocumentTypes.VideoDocument)
     in_tf = metadata.add_input(AnnotationTypes.TimeFrame, label="credits")
@@ -56,18 +54,18 @@ def appmetadata() -> AppMetadata:
     
     # (optional) and finally add runtime parameter specifications
     metadata.add_parameter(name='xThreshold', description='A relative threshold value (0-1) for the x-coordinate to determine how close the text blocks need to be horizontally to be grouped together.',
-                           type='float', default=0.04)
+                           type='number', default=0.04)
     metadata.add_parameter(name='yLimit',
                            description='A relative value (0-1) for the y-coordinate: if it is vertically farther apart than this value, it is considered a separate group even if the x-coordinate difference is within the x_threshold.',
-                           type='float', default=0.045)
+                           type='number', default=0.045)
     metadata.add_parameter(name='yThreshold',
                            description='A relative threshold value (0-1) for the y-coordinate to determine how close the text blocks need to be vertically to be grouped together.',
-                           type='float', default=0.00919)
+                           type='number', default=0.00919)
     metadata.add_parameter(name='firstNTimepoints', description='The initial number of timepoints to sample from the beginnign of the timeframe',
-                           type='int', default=20)
+                           type='integer', default=20)
     metadata.add_parameter(name='initialInterval',
                            description='The initial interval to sample timepoints from the beginning of the timeframe (in milliseconds)',
-                           type='int', default=1000)
+                           type='integer', default=1000)
 
     # metadta.add_parameter(more...)
     
