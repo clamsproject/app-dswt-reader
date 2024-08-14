@@ -3,7 +3,6 @@ clams-python==1.3.0
 mmif-python[cv]
 python-doctr[torch]==0.8.1
 torch>=2.*
-numpy
 editdistance == 0.8.1
 typing
 jiwer == 3.0.4
