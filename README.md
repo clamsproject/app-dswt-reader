@@ -52,6 +52,7 @@ The TextDocument is aligned to the TimeFrame.
 
 - Requires mmif-python[cv] for the `VideoDocument` helper functions
 - Requires GPU to run docTR model at a reasonable speed
+- Please refer to the requirements.txt for the required libraries and their version information. 
 
 ### Configurable runtime parameter
 
