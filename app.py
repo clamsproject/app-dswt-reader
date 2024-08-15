@@ -470,14 +470,14 @@ class DswtReader(ClamsApp):
 
             # Resample timepoints at the optimal interval
             list_TP = self.resampleTP_at_best_interval(video_doc, start_TP_annotation, end_TP_annotation,
-                                                       parameters['first_n_timepoints'], parameters['initial_interval'])
+                                                       parameters['firstNTimepoints'], parameters['initialInterval'])
             # Read texts from the scenes in the timepoints resampled
             self.read_text_from_scenes(list_TP, video_doc, timeUnit, fps)
             # Find the scenes (timepoints) with multiple columns
-            multicolumn_list_TP = self.scene_w_multicolumn(parameters['y_threshold'])
+            multicolumn_list_TP = self.scene_w_multicolumn(parameters['yThreshold'])
 
             # concatenate sentences considering reading orders in the texts with multiple columns
-            result_text = self.process_concatenation(multicolumn_list_TP, parameters['x_threshold'], parameters['y_limit'])
+            result_text = self.process_concatenation(multicolumn_list_TP, parameters['xThreshold'], parameters['yLimit'])
             print(result_text)
 
             # Save the resulted text as a textdocument in the new view and align it to the corresponding timeframe.
@@ -495,8 +495,8 @@ def get_app():
     way to do this is to set global variables before calling this.
     """
     # for example:
-    # return DswtReader(create, from, global, params)
-    raise NotImplementedError
+    return DswtReader()
+    # raise NotImplementedError
 
 
 if __name__ == "__main__":
