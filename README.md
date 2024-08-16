@@ -46,7 +46,9 @@ The TextDocument is aligned to the TimeFrame.
   - sample_video_3.mp4
   `<start>: 52000, <end>: 295000`
   
-
+- When running this app, the user can decide whether to apply an algorithm that identifies scenes (timepoints) with 
+multiple columns of text and reorders the output text considering the positional arrangement of these text blocks or 
+columns within each scene. This option is controlled by a boolean parameter called `multiColumn`, which defaults to `True`.
 
 ### System requirements
 

@@ -66,6 +66,9 @@ def appmetadata() -> AppMetadata:
     metadata.add_parameter(name='initialInterval',
                            description='The initial interval to sample timepoints from the beginning of the timeframe (in milliseconds)',
                            type='integer', default=1000)
+    metadata.add_parameter(name='multiColumn',
+                           description='Deciding whether to identify scenes (timepoints) with text arranged in multiple columns and to reorder the output text based on the positional arrangement of them within each scene. When this is set to False, the resulting text is output in the order that docTR reads it.',
+                           type='boolean', default=True)
 
     # metadta.add_parameter(more...)
     

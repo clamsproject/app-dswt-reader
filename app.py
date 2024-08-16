@@ -474,7 +474,10 @@ class DswtReader(ClamsApp):
             # Read texts from the scenes in the timepoints resampled
             self.read_text_from_scenes(list_TP, video_doc, timeUnit, fps)
             # Find the scenes (timepoints) with multiple columns
-            multicolumn_list_TP = self.scene_w_multicolumn(parameters['yThreshold'])
+            if parameters['multiColumn']:
+                multicolumn_list_TP = self.scene_w_multicolumn(parameters['yThreshold'])
+            else:
+                multicolumn_list_TP = []
 
             # concatenate sentences considering reading orders in the texts with multiple columns
             result_text = self.process_concatenation(multicolumn_list_TP, parameters['xThreshold'], parameters['yLimit'])
