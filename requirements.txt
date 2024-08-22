@@ -6,4 +6,4 @@ torch>=2.*
 editdistance == 0.8.1
 typing
 jiwer == 3.0.4
-nltk == 3.8.1
+nltk == 3.9
